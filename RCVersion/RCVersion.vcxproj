@@ -78,7 +78,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Encoding.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="RCReader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Encoding.h" />
+    <ClInclude Include="RCReader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
