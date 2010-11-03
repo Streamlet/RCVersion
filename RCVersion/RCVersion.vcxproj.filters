@@ -24,12 +24,18 @@
     <ClCompile Include="Encoding.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RCVersion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RCReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Encoding.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RCVersion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
