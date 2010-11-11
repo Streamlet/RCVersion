@@ -5,6 +5,7 @@
 #include <xl/Containers/xlArray.h>
 #include <xl/Containers/xlMap.h>
 #include <xl/Objects/xlString.h>
+#include <Loki/ScopeGuard.h>
 
 #define RC_VERSION_SUCCEESS 0
 #define RC_VERSION_FAILURE  -1
@@ -17,6 +18,12 @@ struct VersionInfo
     WORD wRevision;
 };
 
+struct PathFile
+{
+    xl::String strPattern;
+    bool bRecursion;
+};
+
 struct CommandLineInfo
 {
     bool bFileVersion;
@@ -24,7 +31,7 @@ struct CommandLineInfo
     VersionInfo viFile;
     VersionInfo viProduct;
     xl::Map<xl::String, xl::String> mapStrings;
-    xl::Array<xl::String> arrFiles;
+    xl::Array<PathFile> arrPaths;
 };
 
 void ShowCopyright()
@@ -57,7 +64,12 @@ bool ParseVersion(const xl::String &strVerison, VersionInfo *pVI)
         return false;
     }
 
-    return false;
+    pVI->wMajor = _ttoi(arrVersion[0].GetAddress());
+    pVI->wMinor = _ttoi(arrVersion[1].GetAddress());
+    pVI->wBuild = _ttoi(arrVersion[2].GetAddress());
+    pVI->wRevision = _ttoi(arrVersion[3].GetAddress());
+
+    return true;
 }
 
 bool ParseCommandLine(int argc, TCHAR *argv[], CommandLineInfo *pCLI)
@@ -71,11 +83,12 @@ bool ParseCommandLine(int argc, TCHAR *argv[], CommandLineInfo *pCLI)
     pCLI->bFileVersion = false;
     pCLI->bProductVersion = false;
     pCLI->mapStrings.Clear();
-    pCLI->arrFiles.Clear();
+    pCLI->arrPaths.Clear();
 
     const xl::String strFileVersion = _T("/fileversion:");
     const xl::String strPruductVersion = _T("/productversion:");
     const xl::String strStringProperty = _T("/string:");
+    const xl::String strRecursion = _T("/r");
 
     for (int i = 1; i < argc; ++i)
     {
@@ -107,7 +120,7 @@ bool ParseCommandLine(int argc, TCHAR *argv[], CommandLineInfo *pCLI)
         else if (strCommandLower.IndexOf(strStringProperty) == 0)
         {
             xl::String strProperty = strCommand.Right(strCommand.Length() - strStringProperty.Length());
-            xl::Array<xl::String> arrKeyValue = strProperty.Split(_T(":"), 2);
+            xl::Array<xl::String> arrKeyValue = strProperty.Split(_T("="), 2);
 
             if (arrKeyValue.Size() != 2)
             {
@@ -118,26 +131,166 @@ bool ParseCommandLine(int argc, TCHAR *argv[], CommandLineInfo *pCLI)
         }
         else
         {
-            pCLI->arrFiles.PushBack(strCommand);
+            PathFile pf;
+            pf.strPattern = strCommand;
+            pf.bRecursion = false;
+
+            if (i + 1 < argc)
+            {
+                xl::String strExtra = argv[i + 1];
+                strExtra.MakeLower();
+
+                if (strExtra == strRecursion)
+                {
+                    pf.bRecursion = true;
+                    ++i;
+                }
+            }
+
+            pCLI->arrPaths.PushBack(pf);
         }
     }
 
     return true;
 }
 
-bool ModifyRC(const CommandLineInfo &cli)
+bool ModifyRCFile(const CommandLineInfo &cli, const xl::String strFile)
 {
+    _tprintf(_T("Modifying file %s...\n"), strFile.GetAddress());
+
     xl::String strRCData;
 
-    ReadRC(_T("..\\Test\\MixedLangages.rc"), &strRCData);
+    if (!ReadRC(strFile.GetAddress(), &strRCData))
+    {
+        _tprintf(_T("Error: Failed to read RC file.\n"));
+        return false;
+    }
 
-    strRCData = RCModifyVersion(strRCData, VERSION_TYPE_FILE, 1, 2, 3, 4);
-    strRCData = RCModifyVersion(strRCData, VERSION_TYPE_PRODUCT, 11, 22, 33, 44);
-    strRCData = RCModifyVersionString(strRCData, _T("FileVersion"), _T("111.222.333.444"));
-    strRCData = RCModifyVersionString(strRCData, _T("ProductVersion"), _T("1111.2222.3333.4444"));
-    strRCData = RCModifyVersionString(strRCData, _T("FileDescription"), _T("~!@#$%^&*()_+|`-=\\{}[]:\";'<>?,./"));
+    if (cli.bFileVersion)
+    {
+        strRCData = RCModifyVersion(strRCData, VERSION_TYPE_FILE,
+            cli.viFile.wMajor, cli.viFile.wMinor, cli.viFile.wBuild, cli.viFile.wRevision);
+    }
 
-    WriteRC(strRCData, _T("..\\Test\\Unicode.rc"));
+    if (cli.bProductVersion)
+    {
+        strRCData = RCModifyVersion(strRCData, VERSION_TYPE_PRODUCT,
+            cli.viProduct.wMajor, cli.viProduct.wMinor, cli.viProduct.wBuild, cli.viProduct.wRevision);
+    }
+
+    for (auto it = cli.mapStrings.Begin(); it != cli.mapStrings.End(); ++it)
+    {
+        strRCData = RCModifyVersionString(strRCData, it->Key.GetAddress(), it->Value.GetAddress());
+    }
+
+    if (!WriteRC(strRCData, strFile.GetAddress()))
+    {
+        _tprintf(_T("Error: Failed to write RC file.\n"));
+        return false;
+    }
+
+    return true;
+}
+
+bool ModifyRCFiles(const CommandLineInfo &cli, const xl::String strSearch, bool bRecursion)
+{
+    WIN32_FIND_DATA wfd = {};
+
+    xl::String strPath;
+    xl::String strPattern;
+
+    int nPos = strSearch.LastIndexOf(_T("\\"));
+
+    if (nPos == -1)
+    {
+        strPattern = strSearch;
+    }
+    else
+    {
+        strPath = strSearch.Left(nPos + 1);
+        strPattern = strSearch.Right(strSearch.Length() - nPos - 1);
+    }
+
+    bool bSuccess = true;
+
+    while (true)
+    {
+        HANDLE hFind = FindFirstFile(strSearch.GetAddress(), &wfd);
+
+        if (hFind == INVALID_HANDLE_VALUE)
+        {
+            break;
+        }
+
+        LOKI_ON_BLOCK_EXIT(FindClose, hFind);
+
+        do 
+        {
+            xl::String strFile = wfd.cFileName;
+
+            if (strFile == _T(".") || strFile == _T(".."))
+            {
+                continue;
+            }
+
+            if ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+            {
+                continue;
+            }
+
+            if (!ModifyRCFile(cli, strPath + strFile))
+            {
+                bSuccess = false;
+            }
+
+        } while (FindNextFile(hFind, &wfd));
+
+        break;
+    }
+    
+    if (bRecursion)
+    {
+        HANDLE hFind = FindFirstFile((strPath + _T("*")).GetAddress(), &wfd);
+
+        if (hFind == INVALID_HANDLE_VALUE)
+        {
+            return false;
+        }
+
+        LOKI_ON_BLOCK_EXIT(FindClose, hFind);
+        
+        bool bSuccess = true;
+
+        do 
+        {
+            xl::String strFile = wfd.cFileName;
+
+            if (strFile == _T(".") || strFile == _T(".."))
+            {
+                continue;
+            }
+
+            if ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+            {
+                continue;
+            }
+            
+            ModifyRCFiles(cli, strPath + strFile + _T("\\") + strPattern, true);
+
+        } while (FindNextFile(hFind, &wfd));
+    }
+
+    return bSuccess;
+}
+
+bool ModifyRC(const CommandLineInfo &cli)
+{
+    bool bSuccess = true;
+
+    for (auto it = cli.arrPaths.Begin(); it != cli.arrPaths.End(); ++it)
+    {
+        bSuccess = ModifyRCFiles(cli, it->strPattern, it->bRecursion) && bSuccess;
+    }
 
     return true;
 }
