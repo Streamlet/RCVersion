@@ -14,6 +14,7 @@
 //------------------------------------------------------------------------------
 
 #include "Encoding.h"
+#include <xl/Win32/Memory/xlSafeSmartPtr.h>
 
 xl::StringW Encoding::AnsiToUnicode(const xl::StringA &strAnsi, DWORD dwCodePage /*= CP_ACP*/)
 {
@@ -24,16 +25,15 @@ xl::StringW Encoding::AnsiToUnicode(const xl::StringA &strAnsi, DWORD dwCodePage
         return L"";
     }
 
-    LPWSTR szUnicode = new WCHAR[size];
+    xl::SafeSharedArray<WCHAR> spUnicode = new WCHAR[size];
+    LPWSTR lpszUnicode = spUnicode.RawPointer();
 
-    if (MultiByteToWideChar(dwCodePage, 0, strAnsi.GetAddress(), -1, szUnicode, size) == 0)
+    if (MultiByteToWideChar(dwCodePage, 0, strAnsi.GetAddress(), -1, lpszUnicode, size) == 0)
     {
-        delete szUnicode;
         return L"";
     }
 
-    xl::StringW ret = szUnicode;
-    delete szUnicode;
+    xl::StringW ret = lpszUnicode;
 
     return ret;
 }
@@ -47,16 +47,15 @@ xl::StringA Encoding::UnicodeToAnsi(const xl::StringW &strUnicode, DWORD dwCodeP
         return "";
     }
 
-    LPSTR szAnsi = new CHAR[size];
+    xl::SafeSharedArray<CHAR> spAnsi = new CHAR[size];
+    LPSTR lpszAnsi = spAnsi.RawPointer();
 
-    if (WideCharToMultiByte(dwCodePage, 0, strUnicode.GetAddress(), -1, szAnsi, size, NULL, NULL) == 0)
+    if (WideCharToMultiByte(dwCodePage, 0, strUnicode.GetAddress(), -1, lpszAnsi, size, NULL, NULL) == 0)
     {
-        delete szAnsi;
         return "";
     }
 
-    xl::StringA ret = szAnsi;
-    delete szAnsi;
+    xl::StringA ret = lpszAnsi;
 
     return ret;
 }

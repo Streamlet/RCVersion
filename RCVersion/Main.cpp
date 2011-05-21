@@ -4,7 +4,7 @@
 #include <locale.h>
 #include <xl/Containers/xlArray.h>
 #include <xl/Containers/xlMap.h>
-#include <xl/Objects/xlString.h>
+#include <xl/String/xlString.h>
 #include <Loki/ScopeGuard.h>
 
 #define RC_VERSION_SUCCEESS 0
@@ -36,35 +36,35 @@ struct CommandLineInfo
 
 void ShowCopyright()
 {
-    _tprintf(_T("RCVersion v1.0 by Streamlet\n"));
-    _tprintf(_T("\n"));
+    _tprintf(_T("RCVersion v1.0 by Streamlet\n")
+             _T("\n"));
 }
 
 void ShowHelp()
 {
-    _tprintf(_T("Usage: RCVersion[ /FileVersion:<N>,<N>,<N>,<N>]\n"));
-    _tprintf(_T("                [ /ProductVersion:<N>,<N>,<N>,<N>]\n"));
-    _tprintf(_T("                [ /String:<Property>=<Value>[ /String:<Property>=<Value>[...]]]\n"));
-    _tprintf(_T("                <File>[ /r][ <File>[ /r][ ...]]\n"));
-    _tprintf(_T("\n"));
-    _tprintf(_T("       N        : An decimal integer from 0 to 65535.\n"));
-    _tprintf(_T("       Property : Could be one of the following strings:\n"));
-    _tprintf(_T("                      Comments\n"));
-    _tprintf(_T("                      CompanyName\n"));
-    _tprintf(_T("                      FileDescription\n"));
-    _tprintf(_T("                      FileVersion\n"));
-    _tprintf(_T("                      InternalName\n"));
-    _tprintf(_T("                      LegalCopyright\n"));
-    _tprintf(_T("                      LegalTrademarks\n"));
-    _tprintf(_T("                      OriginalFilename\n"));
-    _tprintf(_T("                      PrivateBuild\n"));
-    _tprintf(_T("                      ProductName\n"));
-    _tprintf(_T("                      ProductVersion\n"));
-    _tprintf(_T("                      SpecialBuild\n"));
-    _tprintf(_T("       Value    : Could be any string.\n"));
-    _tprintf(_T("       File     : Path of target file. Wildcard is supported.\n"));
-    _tprintf(_T("                  Use /r to search files recursively.\n"));
-    _tprintf(_T("\n"));
+    _tprintf(_T("Usage: RCVersion[ /FileVersion:<N>,<N>,<N>,<N>]\n")
+             _T("                [ /ProductVersion:<N>,<N>,<N>,<N>]\n")
+             _T("                [ /String:<Property>=<Value>[ /String:<Property>=<Value>[...]]]\n")
+             _T("                <File>[ /r][ <File>[ /r][ ...]]\n")
+             _T("\n")
+             _T("       N        : An decimal integer from 0 to 65535.\n")
+             _T("       Property : Could be one of the following strings:\n")
+             _T("                      Comments\n")
+             _T("                      CompanyName\n")
+             _T("                      FileDescription\n")
+             _T("                      FileVersion\n")
+             _T("                      InternalName\n")
+             _T("                      LegalCopyright\n")
+             _T("                      LegalTrademarks\n")
+             _T("                      OriginalFilename\n")
+             _T("                      PrivateBuild\n")
+             _T("                      ProductName\n")
+             _T("                      ProductVersion\n")
+             _T("                      SpecialBuild\n")
+             _T("       Value    : Could be any string.\n")
+             _T("       File     : Path of target file. Wildcard is supported.\n")
+             _T("                  Use /r to search files recursively.\n")
+             _T("\n"));
 }
 
 bool ParseVersion(const xl::String &strVerison, VersionInfo *pVI)
@@ -271,7 +271,7 @@ bool ModifyRCFiles(const CommandLineInfo &cli, const xl::String strSearch, bool 
 
         LOKI_ON_BLOCK_EXIT(FindClose, hFind);
         
-        bool bSuccess = true;
+        bSuccess = true;
 
         do 
         {

@@ -7,7 +7,10 @@
 
 bool ReadRCRaw(LPCTSTR lpFileName, xl::Array<BYTE> *parrRCData)
 {
-    assert(parrRCData != nullptr);
+    if (parrRCData == nullptr)
+    {
+        return false;
+    }
 
     parrRCData->Clear();
 
@@ -41,7 +44,10 @@ bool ReadRCRaw(LPCTSTR lpFileName, xl::Array<BYTE> *parrRCData)
 
 bool RCMixedToUnicode(const xl::Array<BYTE> &arrRCData, xl::String *pstrRCData)
 {
-    assert(pstrRCData != nullptr);
+    if (pstrRCData == nullptr)
+    {
+        return false;
+    }
 
     pstrRCData->Clear();
 
@@ -84,7 +90,10 @@ bool RCMixedToUnicode(const xl::Array<BYTE> &arrRCData, xl::String *pstrRCData)
 
 bool RCRawToUnicode(const xl::Array<BYTE> &arrRCData, xl::String *pstrRCData)
 {
-    assert(pstrRCData != nullptr);
+    if (pstrRCData == nullptr)
+    {
+        return false;
+    }
 
     if (arrRCData.Empty())
     {

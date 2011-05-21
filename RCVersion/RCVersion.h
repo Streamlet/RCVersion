@@ -3,7 +3,7 @@
 
 #include <Windows.h>
 #include <tchar.h>
-#include <xl/Objects/xlString.h>
+#include <xl/String/xlString.h>
 
 #define VERSION_TYPE_FILE       0x00000001
 #define VERSION_TYPE_PRODUCT    0x00000002
