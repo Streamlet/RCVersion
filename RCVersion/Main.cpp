@@ -7,6 +7,10 @@
 #include <xl/String/xlString.h>
 #include <Loki/ScopeGuard.h>
 
+#include <xl/Private/Security/xlAppProtector.h>
+XL_DO_SIMPLE_SELFCHECK();
+
+
 #define RC_VERSION_SUCCEESS 0
 #define RC_VERSION_FAILURE  -1
 
