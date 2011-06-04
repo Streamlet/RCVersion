@@ -5,9 +5,28 @@
 #include <tchar.h>
 #include <xl/String/xlString.h>
 
-#define VERSION_TYPE_FILE       0x00000001
-#define VERSION_TYPE_PRODUCT    0x00000002
+enum VersionType
+{
+    VTFileVersion,
+    VTProductVersion
+};
 
-xl::String RCModifyVersion(const xl::String &strRCData, DWORD dwVersionType, WORD wMajor, WORD wMinor, WORD wBuild, WORD wRevision);
-xl::String RCModifyVersionString(const xl::String &strRCData, const xl::String &strKey, const xl::String &strValue);
+xl::String RCModifyVersion(const xl::String &strRCData,
+                           VersionType dwVersionType,
+                           WORD wMajor,
+                           WORD wMinor,
+                           WORD wBuild,
+                           WORD wRevision);
 
+xl::String RCModifyVersionString(const xl::String &strRCData,
+                                 const xl::String &strKey,
+                                 const xl::String &strValue);
+
+xl::String RCIncreaseVersion(const xl::String &strRCData,
+                             VersionType dwVersionType,
+                             int nDeltaMajor,
+                             int wDeltaMinor,
+                             int wDeltaBuild,
+                             int wDeltaRevision,
+                             int nStringFields = 4,
+                             const xl::String &strStringFieldsSplitter = _T("."));

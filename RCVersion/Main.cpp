@@ -28,8 +28,12 @@ struct CommandLineInfo
 {
     bool bFileVersion;
     bool bProductVersion;
+    bool bFileVersionInc;
+    bool bProductVersionInc;
     VersionInfo viFile;
     VersionInfo viProduct;
+    VersionInfo viFileInc;
+    VersionInfo viProductInc;
     xl::Map<xl::String, xl::String> mapStrings;
     xl::Array<PathFile> arrPaths;
 };
@@ -46,6 +50,8 @@ void ShowHelp()
              _T("                [ /ProductVersion:<N>,<N>,<N>,<N>]\n")
              _T("                [ /String:<Property>=<Value>[ /String:<Property>=<Value>[...]]]\n")
              _T("                <File>[ /r][ <File>[ /r][ ...]]\n")
+             _T("                [ /FileVersionInc:<N>,<N>,<N>,<N>]\n")
+             _T("                [ /ProductVersionInc:<N>,<N>,<N>,<N>]\n")
              _T("\n")
              _T("       N        : An decimal integer from 0 to 65535.\n")
              _T("       Property : Could be one of the following strings:\n")
@@ -94,11 +100,15 @@ bool ParseCommandLine(int argc, TCHAR *argv[], CommandLineInfo *pCLI)
 
     pCLI->bFileVersion = false;
     pCLI->bProductVersion = false;
+    pCLI->bFileVersionInc = false;
+    pCLI->bProductVersionInc = false;
     pCLI->mapStrings.Clear();
     pCLI->arrPaths.Clear();
 
     const xl::String strFileVersion = _T("/fileversion:");
     const xl::String strPruductVersion = _T("/productversion:");
+    const xl::String strFileVersionInc = _T("/fileversioninc:");
+    const xl::String strPruductVersionInc = _T("/productversioninc:");
     const xl::String strStringProperty = _T("/string:");
     const xl::String strRecursion = _T("/r");
 
@@ -128,6 +138,28 @@ bool ParseCommandLine(int argc, TCHAR *argv[], CommandLineInfo *pCLI)
             }
 
             pCLI->bProductVersion = true;
+        }
+        else if (strCommandLower.IndexOf(strFileVersionInc) == 0)
+        {
+            xl::String strVersion = strCommand.Right(strCommand.Length() - strFileVersionInc.Length());
+
+            if (!ParseVersion(strVersion, &pCLI->viFileInc))
+            {
+                return false;
+            }
+
+            pCLI->bFileVersionInc = true;
+        }
+        else if (strCommandLower.IndexOf(strPruductVersionInc) == 0)
+        {
+            xl::String strVersion = strCommand.Right(strCommand.Length() - strPruductVersionInc.Length());
+
+            if (!ParseVersion(strVersion, &pCLI->viProductInc))
+            {
+                return false;
+            }
+
+            pCLI->bProductVersionInc = true;
         }
         else if (strCommandLower.IndexOf(strStringProperty) == 0)
         {
@@ -180,19 +212,50 @@ bool ModifyRCFile(const CommandLineInfo &cli, const xl::String strFile)
 
     if (cli.bFileVersion)
     {
-        strRCData = RCModifyVersion(strRCData, VERSION_TYPE_FILE,
-            cli.viFile.wMajor, cli.viFile.wMinor, cli.viFile.wBuild, cli.viFile.wRevision);
+        strRCData = RCModifyVersion(strRCData,
+                                    VTFileVersion,
+                                    cli.viFile.wMajor,
+                                    cli.viFile.wMinor,
+                                    cli.viFile.wBuild,
+                                    cli.viFile.wRevision);
     }
 
     if (cli.bProductVersion)
     {
-        strRCData = RCModifyVersion(strRCData, VERSION_TYPE_PRODUCT,
-            cli.viProduct.wMajor, cli.viProduct.wMinor, cli.viProduct.wBuild, cli.viProduct.wRevision);
+        strRCData = RCModifyVersion(strRCData,
+                                    VTProductVersion,
+                                    cli.viProduct.wMajor,
+                                    cli.viProduct.wMinor,
+                                    cli.viProduct.wBuild,
+                                    cli.viProduct.wRevision);
     }
 
     for (auto it = cli.mapStrings.Begin(); it != cli.mapStrings.End(); ++it)
     {
-        strRCData = RCModifyVersionString(strRCData, it->Key.GetAddress(), it->Value.GetAddress());
+        strRCData = RCModifyVersionString(strRCData,
+                                          it->Key.GetAddress(),
+                                          it->Value.GetAddress());
+    }
+
+    if (cli.bFileVersionInc)
+    {
+        strRCData = RCIncreaseVersion(strRCData,
+                                      VTFileVersion,
+                                      cli.viFileInc.wMajor,
+                                      cli.viFileInc.wMinor,
+                                      cli.viFileInc.wBuild,
+                                      cli.viFileInc.wRevision);
+    }
+
+    if (cli.bProductVersionInc)
+    {
+        strRCData = RCIncreaseVersion(strRCData,
+                                      VTProductVersion,
+                                      cli.viProductInc.wMajor,
+                                      cli.viProductInc.wMinor,
+                                      cli.viProductInc.wBuild,
+                                      cli.viProductInc.wRevision,
+                                      2);
     }
 
     if (!WriteRC(strRCData, strFile.GetAddress()))
