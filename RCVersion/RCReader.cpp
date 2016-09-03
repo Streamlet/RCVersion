@@ -1,7 +1,7 @@
 #include "RCReader.h"
 #include "Encoding.h"
-#include <xl/Containers/xlArray.h>
-#include <Loki/ScopeGuard.h>
+#include <xl/Common/Containers/xlArray.h>
+#include <xl/Common/Meta/xlScopeExit.h>
 #include <cassert>
 #include <Windows.h>
 
@@ -21,7 +21,7 @@ bool ReadRCRaw(LPCTSTR lpFileName, xl::Array<BYTE> *parrRCData)
         return false;
     }
 
-    LOKI_ON_BLOCK_EXIT(CloseHandle, hFile);
+    XL_ON_BLOCK_EXIT(CloseHandle, hFile);
 
     LARGE_INTEGER li;
 
@@ -80,7 +80,7 @@ bool RCMixedToUnicode(const xl::Array<BYTE> &arrRCData, xl::String *pstrRCData)
         }
         
         nPreCodePage += strPreCodePage.Length();
-        dwCodePage = (DWORD)atoi(strAnsi.SubString(nPreCodePage, nPostCodePage -nPreCodePage).GetAddress());
+        dwCodePage = (DWORD)atoi(strAnsi.SubString(nPreCodePage, nPostCodePage -nPreCodePage));
 
         nPos = nPostCodePage + strPostCodePage.Length();
     }
@@ -141,7 +141,7 @@ bool WriteRC(const xl::String &strRCData, LPCTSTR lpFileName)
         return FALSE;
     }
 
-    Loki::ScopeGuard sgDeleteFile = Loki::MakeGuard(DeleteFile, lpFileName);
+	xl::ScopeGuard sgDeleteFile = xl::MakeGuard(xl::Bind(DeleteFile, lpFileName));
 
     HANDLE hFile = CreateFile(lpFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
 
@@ -150,7 +150,7 @@ bool WriteRC(const xl::String &strRCData, LPCTSTR lpFileName)
         return false;
     }
 
-    LOKI_ON_BLOCK_EXIT(CloseHandle, hFile);
+    XL_ON_BLOCK_EXIT(CloseHandle, hFile);
 
     DWORD dwBytesWritten = 0;
     WORD wUnicodeBOM = 0xfeff;
@@ -164,7 +164,7 @@ bool WriteRC(const xl::String &strRCData, LPCTSTR lpFileName)
     {
         DWORD dwBytesToWrite = strRCData.Length() * sizeof(xl::Char);
 
-        if (!WriteFile(hFile, (LPVOID)strRCData.GetAddress(), dwBytesToWrite, &dwBytesWritten, NULL) || dwBytesWritten != dwBytesToWrite)
+        if (!WriteFile(hFile, (LPVOID)(LPCTSTR)strRCData, dwBytesToWrite, &dwBytesWritten, NULL) || dwBytesWritten != dwBytesToWrite)
         {
             return false;
         }

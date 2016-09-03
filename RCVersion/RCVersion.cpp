@@ -1,7 +1,7 @@
 #include "RCVersion.h"
 #include <Windows.h>
 #include <tchar.h>
-#include <xl/String/xlString.h>
+#include <xl/Common/String/xlString.h>
 
 
 xl::String RCModifyStandardVersion(const xl::String &strRCData,

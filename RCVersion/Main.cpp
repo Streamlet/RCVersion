@@ -2,13 +2,10 @@
 #include "RCReader.h"
 #include "RCVersion.h"
 #include <locale.h>
-#include <xl/Containers/xlArray.h>
-#include <xl/Containers/xlMap.h>
-#include <xl/String/xlString.h>
-#include <Loki/ScopeGuard.h>
-
-#include <xl/Private/Security/xlAppProtector.h>
-XL_DO_SIMPLE_SELFCHECK();
+#include <xl/Common/Containers/xlArray.h>
+#include <xl/Common/Containers/xlMap.h>
+#include <xl/Common/String/xlString.h>
+#include <xl/Common/Meta/xlScopeExit.h>
 
 
 #define RC_VERSION_SUCCEESS 0
@@ -86,10 +83,10 @@ bool ParseVersion(const xl::String &strVerison, VersionInfo *pVI)
         return false;
     }
 
-    pVI->wMajor = _ttoi(arrVersion[0].GetAddress());
-    pVI->wMinor = _ttoi(arrVersion[1].GetAddress());
-    pVI->wBuild = _ttoi(arrVersion[2].GetAddress());
-    pVI->wRevision = _ttoi(arrVersion[3].GetAddress());
+    pVI->wMajor = _ttoi(arrVersion[0]);
+    pVI->wMinor = _ttoi(arrVersion[1]);
+    pVI->wBuild = _ttoi(arrVersion[2]);
+    pVI->wRevision = _ttoi(arrVersion[3]);
 
     return true;
 }
@@ -204,11 +201,11 @@ bool ParseCommandLine(int argc, TCHAR *argv[], CommandLineInfo *pCLI)
 
 bool ModifyRCFile(const CommandLineInfo &cli, const xl::String strFile)
 {
-    _tprintf(_T("Modifying file %s...\n"), strFile.GetAddress());
+    _tprintf(_T("Modifying file %s...\n"), (LPCTSTR)strFile);
 
     xl::String strRCData;
 
-    if (!ReadRC(strFile.GetAddress(), &strRCData))
+    if (!ReadRC((LPCTSTR)strFile, &strRCData))
     {
         _tprintf(_T("Error: Failed to read RC file.\n"));
         return false;
@@ -237,8 +234,8 @@ bool ModifyRCFile(const CommandLineInfo &cli, const xl::String strFile)
     for (auto it = cli.mapStrings.Begin(); it != cli.mapStrings.End(); ++it)
     {
         strRCData = RCModifyVersionString(strRCData,
-                                          it->Key.GetAddress(),
-                                          it->Value.GetAddress());
+                                          it->Key,
+                                          it->Value);
     }
 
     if (cli.bFileVersionInc)
@@ -262,7 +259,7 @@ bool ModifyRCFile(const CommandLineInfo &cli, const xl::String strFile)
                                       2);
     }
 
-    if (!WriteRC(strRCData, strFile.GetAddress()))
+    if (!WriteRC(strRCData, strFile))
     {
         _tprintf(_T("Error: Failed to write RC file.\n"));
         return false;
@@ -294,14 +291,14 @@ bool ModifyRCFiles(const CommandLineInfo &cli, const xl::String strSearch, bool 
 
     while (true)
     {
-        HANDLE hFind = FindFirstFile(strSearch.GetAddress(), &wfd);
+        HANDLE hFind = FindFirstFile(strSearch, &wfd);
 
         if (hFind == INVALID_HANDLE_VALUE)
         {
             break;
         }
 
-        LOKI_ON_BLOCK_EXIT(FindClose, hFind);
+        XL_ON_BLOCK_EXIT(FindClose, hFind);
 
         do 
         {
@@ -329,15 +326,15 @@ bool ModifyRCFiles(const CommandLineInfo &cli, const xl::String strSearch, bool 
     
     if (bRecursion)
     {
-        HANDLE hFind = FindFirstFile((strPath + _T("*")).GetAddress(), &wfd);
+        HANDLE hFind = FindFirstFile((strPath + _T("*")), &wfd);
 
         if (hFind == INVALID_HANDLE_VALUE)
         {
             return false;
         }
 
-        LOKI_ON_BLOCK_EXIT(FindClose, hFind);
-        
+        XL_ON_BLOCK_EXIT(FindClose, hFind);
+
         bSuccess = true;
 
         do 

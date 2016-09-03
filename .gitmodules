@@ -1,3 +1,7 @@
 [submodule "VSProps"]
 	path = VSProps
 	url = https://github.com/Streamlet/VSProps.git
+[submodule "External/xlLib"]
+	path = External/xlLib
+	url = https://github.com/Streamlet/xlLib.git
+	branch = master
