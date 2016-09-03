@@ -3,7 +3,7 @@
 
 #include <Windows.h>
 #include <tchar.h>
-#include <xl/String/xlString.h>
+#include <xl/Common/String/xlString.h>
 
 enum VersionType
 {

@@ -1,0 +1,3 @@
+[submodule "VSProps"]
+	path = VSProps
+	url = https://github.com/Streamlet/VSProps.git
